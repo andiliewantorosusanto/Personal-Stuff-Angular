@@ -1,0 +1,125 @@
+<nav class="w-full h-full bg-white flex flex-col py-6 px-4 text-slate-800">
+
+  <!-- Logo -->
+  <div class="mb-8">
+    <div class="text-2xl font-bold text-emerald-700">Torichet's Stuff</div>
+    <div class="mt-2 inline-flex items-center gap-2 text-xs text-emerald-700 bg-white/70 border border-emerald-100 rounded-full px-3 py-1 shadow-sm">
+      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+      Workspace
+    </div>
+  </div>
+
+  <div class="flex-1 space-y-6">
+    <div class="space-y-2">
+      <div class="text-xs font-semibold uppercase tracking-wide text-emerald-600 flex items-center gap-2">
+        <mat-icon class="text-base">dashboard</mat-icon>
+        Dashboard
+      </div>
+      <div class="nav-submenu">
+        <a
+          routerLink="/finance"
+          routerLinkActive="nav-sublink-active"
+          class="nav-sublink"
+        >
+          <mat-icon class="nav-sublink-icon">account_balance_wallet</mat-icon>
+          Finance
+        </a>
+        <a
+          routerLink="/productivity"
+          routerLinkActive="nav-sublink-active"
+          class="nav-sublink"
+        >
+          <mat-icon class="nav-sublink-icon">insights</mat-icon>
+          Productivity
+        </a>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="text-xs font-semibold uppercase tracking-wide text-emerald-600 flex items-center gap-2">
+        <mat-icon class="text-base">account_balance</mat-icon>
+        Finance
+      </div>
+      <div class="nav-submenu">
+        <a
+          routerLink="/transactions"
+          routerLinkActive="nav-sublink-active"
+          class="nav-sublink"
+        >
+          <mat-icon class="nav-sublink-icon">receipt_long</mat-icon>
+          Transactions
+        </a>
+        <a
+          routerLink="/stuff"
+          routerLinkActive="nav-sublink-active"
+          class="nav-sublink"
+        >
+          <mat-icon class="nav-sublink-icon">inventory_2</mat-icon>
+          Stuff
+        </a>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="text-xs font-semibold uppercase tracking-wide text-emerald-600 flex items-center gap-2">
+        <mat-icon class="text-base">workspaces</mat-icon>
+        Workspace
+      </div>
+      <a
+        routerLink="/todo"
+        routerLinkActive="nav-link-active"
+        class="nav-link"
+      >
+        <div class="flex items-center gap-3">
+          <mat-icon>check_circle</mat-icon>
+          To-do
+        </div>
+      </a>
+      <a
+        routerLink="/projects"
+        routerLinkActive="nav-link-active"
+        class="nav-link"
+      >
+        <div class="flex items-center gap-3">
+          <mat-icon>folder</mat-icon>
+          Projects
+        </div>
+      </a>
+      <a
+        routerLink="/calendar"
+        routerLinkActive="nav-link-active"
+        class="nav-link"
+      >
+        <div class="flex items-center gap-3">
+          <mat-icon>calendar_today</mat-icon>
+          Calendar
+        </div>
+      </a>
+      <a
+        routerLink="/documents"
+        routerLinkActive="nav-link-active"
+        class="nav-link"
+      >
+        <div class="flex items-center gap-3">
+          <mat-icon>description</mat-icon>
+          Documents
+        </div>
+      </a>
+      <a
+        routerLink="/reports"
+        routerLinkActive="nav-link-active"
+        class="nav-link"
+      >
+        <div class="flex items-center gap-3">
+          <mat-icon>pie_chart</mat-icon>
+          Reports
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="pt-6 mt-auto border-t border-emerald-100 text-xs text-slate-500">
+    Organized, calm workspace.
+  </div>
+
+</nav>

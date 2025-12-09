@@ -1,0 +1,48 @@
+<div class="space-y-6">
+  <!-- Summary -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="rounded-2xl p-4 bg-emerald-600 text-white shadow-sm">
+      <p class="text-sm opacity-80">Total saldo</p>
+      <p class="mt-3 text-3xl font-semibold">{{ totalBalance() | currency:'IDR':'symbol':'1.0-0':'en-US' }}</p>
+      <p class="mt-2 text-xs opacity-90">{{ walletCount() }} dompet tersimpan</p>
+    </div>
+
+    <div class="rounded-2xl p-4 bg-white shadow-sm border border-slate-100">
+      <p class="text-sm text-slate-500">Transaksi</p>
+      <p class="mt-3 text-2xl font-semibold text-slate-900">{{ transactionCount() }}</p>
+      <p class="mt-2 text-xs text-emerald-500">Aktif di halaman Transaksi</p>
+    </div>
+
+    <div class="rounded-2xl p-4 bg-white shadow-sm border border-slate-100">
+      <p class="text-sm text-slate-500">Perubahan bersih</p>
+      <p class="mt-3 text-2xl font-semibold text-slate-900">
+        {{ latestNetChange() | currency:'IDR':'symbol':'1.0-0':'en-US' }}
+      </p>
+      <p class="mt-2 text-xs text-emerald-500">Sejak awal data</p>
+    </div>
+
+    <div class="rounded-2xl p-4 bg-white shadow-sm border border-slate-100">
+      <p class="text-sm text-slate-500">Tanggal terakhir</p>
+      <p class="mt-3 text-2xl font-semibold text-slate-900">
+        {{ transactionsByDay().length ? (transactionsByDay()[0].day | date:'mediumDate') : 'Belum ada' }}
+      </p>
+      <p class="mt-2 text-xs text-slate-500">Berdasarkan transaksi</p>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <section class="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold text-slate-800">Pergerakan aset (Rp)</h2>
+      <span class="text-xs text-slate-500">Berdasarkan transaksi harian</span>
+    </div>
+    <div class="h-72">
+      <canvas baseChart [type]="'line'" [data]="assetLineData" [options]="assetLineOptions"></canvas>
+    </div>
+  </section>
+
+  <!-- Link to transactions -->
+  <section class="rounded-2xl bg-white border border-dashed border-emerald-200 p-5 text-sm text-slate-700">
+    Atur dompet, tambah transaksi, dan lihat pengeluaran harian di halaman <strong>Transactions</strong>.
+  </section>
+</div>

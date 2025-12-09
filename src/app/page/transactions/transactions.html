@@ -1,0 +1,350 @@
+<div class="space-y-6">
+  <!-- Wallets -->
+  <section class="rounded-2xl bg-white border border-slate-100 shadow-sm p-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-emerald-600 font-semibold">Dompet</p>
+        <h2 class="text-lg font-semibold text-slate-900">Kelola dompet</h2>
+      </div>
+      <span class="text-xs text-slate-500">{{ wallets.length }} total</span>
+    </div>
+
+    <div class="grid gap-3 md:grid-cols-2">
+      @for (wallet of wallets; track wallet.id) {
+        @let style = getStyle(wallet.styleId);
+        <div class="rounded-xl border border-slate-100 p-4 flex items-center justify-between" [ngClass]="style.bg">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-9 h-9 rounded-full flex items-center justify-center"
+                   [ngClass]="style.iconBg + ' ' + style.text">
+                <mat-icon>{{ wallet.icon || 'account_balance_wallet' }}</mat-icon>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">{{ wallet.name }}</p>
+                <p class="text-xs text-slate-500">Dibuat {{ wallet.createdAt | date:'mediumDate' }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="text-right space-y-2">
+            <p class="text-sm font-semibold" [ngClass]="style.text">
+              {{ currentBalance(wallet.id) | currency:'IDR':'symbol':'1.0-0':'en-US' }}
+            </p>
+            <div class="flex gap-1 justify-end">
+              <button
+                class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                type="button"
+                (click)="editWallet(wallet.id)"
+                aria-label="Edit wallet"
+              >
+                <mat-icon fontIcon="edit" class="text-base"></mat-icon>
+              </button>
+              <button
+                class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100"
+                type="button"
+                (click)="deleteWallet(wallet.id)"
+                aria-label="Delete wallet"
+              >
+                <mat-icon fontIcon="delete" class="text-base"></mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+      @empty {
+        <p class="text-sm text-slate-500">Belum ada dompet.</p>
+      }
+
+      <button
+        type="button"
+        class="rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/50 p-4 text-left hover:border-emerald-400"
+        (click)="showWalletModal = true"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <mat-icon>add</mat-icon>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-emerald-800">Tambah dompet</p>
+            <p class="text-xs text-emerald-600">Buat dompet baru dengan saldo awal.</p>
+          </div>
+        </div>
+      </button>
+    </div>
+
+    @if (showWalletModal) {
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-slate-900">
+              {{ editingWalletId ? 'Edit dompet' : 'Tambah dompet' }}
+            </h3>
+            <button class="text-slate-500 hover:text-slate-800" type="button" (click)="resetWalletForm()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <form class="grid gap-3 md:grid-cols-2" (ngSubmit)="saveWallet()">
+            <label class="text-sm text-slate-700 md:col-span-2">
+              Nama
+              <input
+                type="text"
+                [(ngModel)]="walletName"
+                name="walletName"
+                class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+                placeholder="e.g. Rekening Utama"
+                required
+              />
+            </label>
+
+            <div class="text-sm text-slate-700">
+              Saldo awal (Rp)
+              <div class="mt-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-emerald-400 focus-within:border-emerald-400">
+                <span class="text-slate-500 text-sm">Rp</span>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  [(ngModel)]="walletInitial"
+                  name="walletInitial"
+                  class="flex-1 bg-transparent outline-none text-sm"
+                  (ngModelChange)="formatWalletAmount($event)"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2 text-sm text-slate-700 md:col-span-2">
+              Ikon
+              <div class="flex flex-wrap gap-2">
+                @for (icon of iconOptions; track icon) {
+                  <button
+                    type="button"
+                    class="w-10 h-10 rounded-full border flex items-center justify-center"
+                    [ngClass]="walletIcon === icon ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-slate-200'"
+                    (click)="walletIcon = icon"
+                    aria-label="Pilih ikon {{ icon }}"
+                  >
+                    <mat-icon>{{ icon }}</mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="md:col-span-2 space-y-2 text-sm text-slate-700">
+              Warna
+              <div class="flex flex-wrap gap-2">
+                @for (style of walletStyles; track style.id) {
+                  <button
+                    type="button"
+                    class="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm"
+                    [ngClass]="{
+                      'border-emerald-400 ring-2 ring-emerald-200': walletStyleId === style.id,
+                      'border-slate-200': walletStyleId !== style.id
+                    }"
+                    (click)="walletStyleId = style.id"
+                  >
+                    <span class="w-6 h-6 rounded-full block" [ngClass]="style.bg"></span>
+                    <span class="text-slate-700">{{ style.id }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="flex items-end justify-end gap-2 md:col-span-2">
+              <button
+                type="button"
+                class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                (click)="resetWalletForm()"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                class="rounded-xl bg-emerald-600 text-white text-sm font-semibold px-4 py-2 hover:bg-emerald-700"
+              >
+                {{ editingWalletId ? 'Update' : 'Tambah' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- Transactions -->
+  <section class="rounded-2xl bg-white border border-slate-100 shadow-sm p-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-emerald-600 font-semibold">Transaksi</p>
+        <h2 class="text-lg font-semibold text-slate-900">Catat pemasukan / pengeluaran</h2>
+      </div>
+      <span class="text-xs text-slate-500">{{ finance.transactions().length }} total</span>
+    </div>
+
+    <form class="grid gap-3 md:grid-cols-5 md:items-end" (ngSubmit)="saveTransaction()">
+      <label class="text-sm text-slate-700">
+        Dompet
+        <select
+          [(ngModel)]="txWalletId"
+          name="txWalletId"
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+        >
+          <option value="" disabled>Pilih dompet</option>
+          @for (wallet of wallets; track wallet.id) {
+            <option [value]="wallet.id">{{ wallet.name }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="text-sm text-slate-700">
+        Kategori
+        <select
+          [(ngModel)]="txCategory"
+          name="txCategory"
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+        >
+          @for (cat of categories; track cat) {
+            <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="text-sm text-slate-700">
+        Jumlah (+/-)
+        <div class="mt-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-emerald-400 focus-within:border-emerald-400">
+          <span class="text-slate-500 text-sm">Rp</span>
+          <input
+            type="text"
+            inputmode="decimal"
+            [(ngModel)]="txValue"
+            name="txValue"
+            class="flex-1 bg-transparent outline-none text-sm"
+            (ngModelChange)="formatAmount($event)"
+            placeholder="0"
+          />
+        </div>
+      </label>
+
+      <label class="text-sm text-slate-700">
+        Tanggal
+        <input
+          type="date"
+          [(ngModel)]="txDate"
+          name="txDate"
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+        />
+      </label>
+
+      <label class="text-sm text-slate-700">
+        Waktu
+        <input
+          type="time"
+          [(ngModel)]="txTime"
+          name="txTime"
+          list="timeOptions"
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+        />
+      </label>
+
+      <datalist id="timeOptions">
+        <option value="06:00"></option>
+        <option value="08:00"></option>
+        <option value="09:00"></option>
+        <option value="12:00"></option>
+        <option value="15:00"></option>
+        <option value="17:00"></option>
+        <option value="18:00"></option>
+        <option value="20:00"></option>
+        <option value="22:00"></option>
+      </datalist>
+
+      <label class="text-sm text-slate-700 md:col-span-2">
+        Deskripsi
+        <input
+          type="text"
+          [(ngModel)]="txDescription"
+          name="txDescription"
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+          placeholder="Catatan opsional"
+        />
+      </label>
+
+      <button
+        type="submit"
+        class="w-full rounded-xl bg-emerald-600 text-white text-sm font-semibold py-2.5 hover:bg-emerald-700 md:col-span-1"
+      >
+        {{ editingTxId ? 'Update' : 'Tambah' }}
+      </button>
+    </form>
+  </section>
+
+  <!-- Daily breakdown -->
+  <section class="rounded-2xl bg-white border border-slate-100 shadow-sm p-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-emerald-600 font-semibold">Pengeluaran harian</p>
+        <h2 class="text-lg font-semibold text-slate-900">Terbaru ke lama</h2>
+      </div>
+      <span class="text-xs text-slate-500">Berdasarkan transaksi</span>
+    </div>
+
+    <div class="space-y-4">
+      @for (group of transactionsByDay; track group.day) {
+        <div class="rounded-xl border border-slate-100 p-4 bg-slate-50/60">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <p class="text-sm font-semibold text-slate-900">{{ group.day | date:'fullDate' }}</p>
+              <p class="text-xs text-slate-500">{{ group.items.length }} transaksi</p>
+            </div>
+            <p class="text-sm font-semibold text-emerald-700">
+              Total: {{ group.total | currency:'IDR':'symbol':'1.0-0':'en-US' }}
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            @for (tx of group.items; track tx.id) {
+              <div class="flex items-start justify-between rounded-lg bg-white px-3 py-2 border border-slate-100">
+                <div class="space-y-1">
+                  <p class="text-sm font-semibold text-slate-900">{{ tx.category }}</p>
+                  <p class="text-xs text-slate-500">{{ walletLabel(tx.walletId) }} · {{ tx.timestamp | date:'shortTime' }}</p>
+                  @if (tx.description) {
+                    <p class="text-xs text-slate-500">{{ tx.description }}</p>
+                  }
+                </div>
+                <div class="text-right space-y-1">
+                  <p
+                    class="text-sm font-semibold"
+                    [class.text-emerald-600]="tx.value > 0"
+                    [class.text-rose-600]="tx.value < 0"
+                  >
+                    {{ tx.value | currency:'IDR':'symbol':'1.0-0':'en-US' }}
+                  </p>
+                  <div class="flex gap-1 justify-end">
+                    <button
+                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      type="button"
+                      (click)="editTransaction(tx.id)"
+                      aria-label="Edit transaction"
+                    >
+                      <mat-icon fontIcon="edit" class="text-base"></mat-icon>
+                    </button>
+                    <button
+                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100"
+                      type="button"
+                      (click)="deleteTransaction(tx.id)"
+                      aria-label="Delete transaction"
+                    >
+                      <mat-icon fontIcon="delete" class="text-base"></mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      @empty {
+        <p class="text-sm text-slate-500">Belum ada transaksi.</p>
+      }
+    </div>
+  </section>
+</div>
