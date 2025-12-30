@@ -1,16 +1,44 @@
-import { Component } from '@angular/core';
+import { Component, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { ConfirmDialogComponent } from '../../dialog/confirm-dialog';
+import Swal from 'sweetalert2';
 import { FinanceDataService, Transaction, WALLET_STYLES, WalletStyle } from '../finance/finance-data.service';
 
 @Component({
   selector: 'app-transactions',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, ConfirmDialogComponent],
+  imports: [CommonModule, FormsModule, MatIconModule],
   templateUrl: './transactions.html',
+  encapsulation: ViewEncapsulation.None,
+  styles: [
+    `
+      .icon-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+      }
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #transactions-section,
+        #transactions-section * {
+          visibility: visible;
+        }
+        #transactions-section {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        @page {
+          margin: 12mm;
+        }
+      }
+    `,
+  ],
 })
 export class TransactionsPage {
   walletName = '';
@@ -25,13 +53,12 @@ export class TransactionsPage {
   txValue: string | number = '0';
   txDescription = '';
   txDate = this.today();
-  txTime = this.nowTime();
   editingTxId: string | null = null;
   iconOptions = ['account_balance_wallet', 'savings', 'credit_card', 'account_balance', 'wallet'];
 
-  constructor(protected finance: FinanceDataService, private dialog: MatDialog) {
+  constructor(protected finance: FinanceDataService) {
     this.txWalletId = this.defaultWalletId();
-    this.txCategory = this.finance.categories[0] ?? '';
+    this.txCategory = this.finance.categories()[0]?.name ?? '';
     this.walletStyleId = WALLET_STYLES[0].id;
   }
 
@@ -40,7 +67,7 @@ export class TransactionsPage {
   }
 
   get categories() {
-    return this.finance.categories;
+    return this.finance.categories();
   }
 
   get transactionsByDay() {
@@ -49,6 +76,14 @@ export class TransactionsPage {
 
   get walletStyles() {
     return WALLET_STYLES;
+  }
+
+  exportPDF() {
+    window.print();
+  }
+
+  categoryIcon(name: string) {
+    return this.finance.categoryIcon(name);
   }
 
   walletLabel(id: string) {
@@ -80,16 +115,13 @@ export class TransactionsPage {
     this.showWalletModal = true;
   }
 
-  deleteWallet(id: string) {
-    this.openConfirm('Hapus dompet', 'Dompet dan seluruh transaksinya akan dihapus. Lanjutkan?').then(
-      (ok) => {
-        if (!ok) return;
-        this.finance.deleteWallet(id);
-        if (this.editingWalletId === id) this.resetWalletForm();
-        if (this.txWalletId === id) this.txWalletId = this.defaultWalletId();
-        this.showWalletModal = false;
-      }
-    );
+  async deleteWallet(id: string) {
+    const ok = await this.confirm('Hapus dompet', 'Dompet dan seluruh transaksinya akan dihapus. Lanjutkan?');
+    if (!ok) return;
+    this.finance.deleteWallet(id);
+    if (this.editingWalletId === id) this.resetWalletForm();
+    if (this.txWalletId === id) this.txWalletId = this.defaultWalletId();
+    this.showWalletModal = false;
   }
 
   saveTransaction() {
@@ -122,15 +154,13 @@ export class TransactionsPage {
     this.txValue = tx.value;
     this.txDescription = tx.description ?? '';
     this.txDate = tx.timestamp.slice(0, 10);
-    this.txTime = tx.timestamp.slice(11, 16);
   }
 
-  deleteTransaction(id: string) {
-    this.openConfirm('Hapus transaksi', 'Transaksi ini akan dihapus. Lanjutkan?').then((ok) => {
-      if (!ok) return;
-      this.finance.deleteTransaction(id);
-      if (this.editingTxId === id) this.resetTxForm();
-    });
+  async deleteTransaction(id: string) {
+    const ok = await this.confirm('Hapus transaksi', 'Transaksi ini akan dihapus. Lanjutkan?');
+    if (!ok) return;
+    this.finance.deleteTransaction(id);
+    if (this.editingTxId === id) this.resetTxForm();
   }
 
   resetWalletForm() {
@@ -145,11 +175,10 @@ export class TransactionsPage {
   resetTxForm() {
     this.editingTxId = null;
     this.txWalletId = this.defaultWalletId();
-    this.txCategory = this.finance.categories[0];
+    this.txCategory = this.finance.categories()[0]?.name ?? '';
     this.txValue = '0';
     this.txDescription = '';
     this.txDate = this.today();
-    this.txTime = this.nowTime();
   }
 
   private defaultWalletId(): string {
@@ -160,14 +189,9 @@ export class TransactionsPage {
     return new Date().toISOString().slice(0, 10);
   }
 
-  private nowTime(): string {
-    return new Date().toISOString().slice(11, 16);
-  }
-
   private buildTimestamp(): string {
     const date = this.txDate || this.today();
-    const time = this.txTime || '00:00';
-    return `${date}T${time}`;
+    return `${date}T00:00`;
   }
 
   formatAmount(raw: string | number) {
@@ -195,14 +219,21 @@ export class TransactionsPage {
     return WALLET_STYLES.find((s) => s.id === styleId) ?? WALLET_STYLES[0];
   }
 
-  private openConfirm(title: string, message: string): Promise<boolean> {
-    return this.dialog
-      .open(ConfirmDialogComponent, {
-        data: { title, message, confirmText: 'Hapus', cancelText: 'Batal' },
-        panelClass: 'confirm-dialog-panel',
-      })
-      .afterClosed()
-      .toPromise()
-      .then((res) => !!res);
+  private async confirm(title: string, text: string): Promise<boolean> {
+    const result = await Swal.fire({
+      title,
+      text,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Hapus',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#e5e7eb',
+      reverseButtons: true,
+      customClass: {
+        cancelButton: 'text-slate-700',
+      },
+    });
+    return !!result.isConfirmed;
   }
 }

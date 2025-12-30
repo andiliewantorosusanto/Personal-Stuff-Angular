@@ -1,0 +1,97 @@
+<div class="space-y-6">
+  <section class="rounded-2xl bg-white border border-slate-100 shadow-sm p-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-emerald-600 font-semibold">Kategori</p>
+        <h2 class="text-lg font-semibold text-slate-900">Tambah / edit kategori</h2>
+      </div>
+      <span class="text-xs text-slate-500">{{ categories.length }} total</span>
+    </div>
+
+    <form class="grid gap-3 md:grid-cols-3 md:items-end" (ngSubmit)="save()">
+      <label class="text-sm text-slate-700 md:col-span-2">
+        Nama
+        <input
+          type="text"
+          [(ngModel)]="name"
+          name="name"
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+          placeholder="Misal: Groceries"
+          required
+        />
+      </label>
+
+      <div class="space-y-2 text-sm text-slate-700">
+        Ikon
+        <div class="flex flex-wrap gap-2">
+          @for (opt of iconOptions; track opt) {
+            <button
+              type="button"
+              class="w-9 h-9 rounded-full border flex items-center justify-center"
+              [ngClass]="icon === opt ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-slate-200'"
+              (click)="icon = opt"
+            >
+              <mat-icon>{{ opt }}</mat-icon>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="flex items-end justify-end gap-2 md:col-span-3">
+        <button
+          type="button"
+          class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          (click)="reset()"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          class="rounded-xl bg-emerald-600 text-white text-sm font-semibold px-4 py-2 hover:bg-emerald-700"
+        >
+          {{ editingId ? 'Update' : 'Tambah' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="rounded-2xl bg-white border border-slate-100 shadow-sm p-5 space-y-3">
+    <p class="text-sm font-semibold text-slate-900">Daftar kategori</p>
+    <div class="grid gap-3 md:grid-cols-2">
+      @for (cat of categories; track cat.id) {
+        <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-4 flex items-center justify-between text-sm">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <mat-icon>{{ cat.icon }}</mat-icon>
+            </div>
+            <div>
+              <p class="font-semibold text-slate-900">{{ cat.name }}</p>
+              <p class="text-xs text-slate-500">ID: {{ cat.id }}</p>
+            </div>
+          </div>
+          <div class="flex gap-1">
+            <button
+              class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              type="button"
+              (click)="edit(cat.id)"
+              aria-label="Edit category"
+            >
+              <mat-icon fontIcon="edit" class="text-base"></mat-icon>
+            </button>
+            <button
+              class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100"
+              type="button"
+              (click)="remove(cat.id)"
+              aria-label="Delete category"
+            >
+              <mat-icon fontIcon="delete" class="text-base"></mat-icon>
+            </button>
+          </div>
+        </div>
+      }
+      @empty {
+        <p class="text-sm text-slate-500">Belum ada kategori.</p>
+      }
+    </div>
+  </section>
+</div>

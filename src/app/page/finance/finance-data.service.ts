@@ -25,8 +25,15 @@ export type Transaction = {
   timestamp: string;
 };
 
+export type Category = {
+  id: string;
+  name: string;
+  icon: string;
+};
+
 const WALLET_KEY = 'finance-wallets';
 const TX_KEY = 'finance-transactions';
+const CATEGORY_KEY = 'finance-categories';
 export const WALLET_STYLES: WalletStyle[] = [
   { id: 'emerald', bg: 'bg-emerald-50', text: 'text-emerald-700', iconBg: 'bg-emerald-100' },
   { id: 'indigo', bg: 'bg-indigo-50', text: 'text-indigo-700', iconBg: 'bg-indigo-100' },
@@ -38,23 +45,20 @@ export const WALLET_STYLES: WalletStyle[] = [
 
 @Injectable({ providedIn: 'root' })
 export class FinanceDataService {
-  readonly categories: string[] = [
-    'Salary',
-    'Bonus',
-    'Investments',
-    'Rent',
-    'Groceries',
-    'Bills',
-    'Transport',
-    'Dining',
-    'Health',
-    'Leisure',
-    'Other',
+  private readonly defaultCategories: Category[] = [
+    { id: 'salary', name: 'Salary', icon: 'savings' },
+    { id: 'groceries', name: 'Groceries', icon: 'shopping_bag' },
+    { id: 'transport', name: 'Transport', icon: 'commute' },
+    { id: 'bills', name: 'Bills', icon: 'receipt_long' },
+    { id: 'leisure', name: 'Leisure', icon: 'sports_esports' },
+    { id: 'health', name: 'Health', icon: 'favorite' },
+    { id: 'other', name: 'Uncategorized', icon: 'sell' },
   ];
 
   readonly walletStyles = WALLET_STYLES;
   readonly wallets = signal<Wallet[]>(this.normalizeWallets(this.load(WALLET_KEY, [])));
   readonly transactions = signal<Transaction[]>(this.load(TX_KEY, []));
+  readonly categories = signal<Category[]>(this.normalizeCategories(this.load(CATEGORY_KEY, this.defaultCategories)));
 
   readonly walletBalances = computed(() => {
     const sums: Record<string, number> = {};
@@ -164,6 +168,42 @@ export class FinanceDataService {
     this.persist(TX_KEY, this.transactions());
   }
 
+  upsertCategory(data: { id?: string; name: string; icon?: string }) {
+    const icon = data.icon || 'sell';
+    if (data.id) {
+      this.categories.update((list) =>
+        list.map((cat) => (cat.id === data.id ? { ...cat, name: data.name, icon } : cat))
+      );
+    } else {
+      const category: Category = {
+        id: data.id ?? this.uid(),
+        name: data.name,
+        icon,
+      };
+      this.categories.update((list) => [category, ...list]);
+    }
+    this.persist(CATEGORY_KEY, this.categories());
+  }
+
+  deleteCategory(id: string) {
+    const target = this.categories().find((c) => c.id === id);
+    if (!target) return;
+    const fallback = this.ensureFallbackCategory();
+    if (target.id === fallback.id) return;
+
+    this.categories.update((list) => list.filter((c) => c.id !== id));
+    this.transactions.update((list) =>
+      list.map((tx) => (tx.category === target.name ? { ...tx, category: fallback.name } : tx))
+    );
+
+    this.persist(CATEGORY_KEY, this.categories());
+    this.persist(TX_KEY, this.transactions());
+  }
+
+  categoryIcon(name: string): string {
+    return this.categories().find((c) => c.name === name)?.icon ?? 'sell';
+  }
+
   walletLabel(walletId: string) {
     return this.wallets().find((w) => w.id === walletId)?.name ?? 'Unknown wallet';
   }
@@ -201,10 +241,46 @@ export class FinanceDataService {
     });
   }
 
+  private normalizeCategories(list: (Category | string)[]): Category[] {
+    const normalized = list.map((c, idx) => {
+      if (typeof c === 'string') {
+        return {
+          id: this.slug(c) || this.defaultCategories[idx % this.defaultCategories.length].id,
+          name: c,
+          icon: 'sell',
+        };
+      }
+      return {
+        id: c.id ?? this.defaultCategories[idx % this.defaultCategories.length].id,
+        name: c.name,
+        icon: c.icon || 'sell',
+      };
+    });
+    const hasFallback = normalized.some((c) => c.name === 'Uncategorized');
+    return hasFallback ? normalized : [...normalized, this.defaultCategories.find((c) => c.name === 'Uncategorized')!];
+  }
+
+  private ensureFallbackCategory(): Category {
+    const existing = this.categories().find((c) => c.name === 'Uncategorized');
+    if (existing) return existing;
+    const fallback = this.defaultCategories.find((c) => c.name === 'Uncategorized')!;
+    this.categories.update((list) => [...list, fallback]);
+    this.persist(CATEGORY_KEY, this.categories());
+    return fallback;
+  }
+
   private uid(): string {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
       return crypto.randomUUID();
     }
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  private slug(value: string): string {
+    return value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 }

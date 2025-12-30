@@ -9,6 +9,7 @@ import { FinancePage } from './page/finance/finance';
 import { ProductivityPage } from './page/productivity/productivity';
 import { TransactionsPage } from './page/transactions/transactions';
 import { StuffPage } from './page/stuff/stuff';
+import { CategoriesPage } from './page/categories/categories';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -19,6 +20,7 @@ export const routes: Routes = [
   { path: 'finance', component: FinancePage },
   { path: 'productivity', component: ProductivityPage },
   { path: 'transactions', component: TransactionsPage },
+  { path: 'categories', component: CategoriesPage },
   { path: 'stuff', component: StuffPage },
   { path: 'calendar', component: CalendarPage },
   { path: 'documents', component: DocumentsPage },
